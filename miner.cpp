@@ -1,3 +1,5 @@
+//Nexus Solo Miner for Aperture 
+
 #include "core.h"
 
 unsigned int nBestHeight = 0;
@@ -14,235 +16,208 @@ unsigned int nDifficulty   = 0;
 
 namespace Core
 {
+    
+   
+    bool MinerThread::sendCommand(Commands command)
+    {
+        std::string commandStr, errStr;
+        switch (command){
+            case PING: 
+                commandStr = "{0}";
+                errStr = "Ping";
+                break;
+            case ENABLE_HASH:
+                commandStr = "{61}";
+                errStr = "Enable_Hash";
+                break;
+            case DISABLE_HASH:
+                commandStr = "{60}";
+                errStr = "Disable_Hash";
+                break;
+            default:
+                commandStr = "{0}";
+                errStr = "Ping";
+                break;
+        }
+        
+        cSerialPortConnection->writeString(commandStr);
+        std::string response;
+        try
+        {
+            response = cSerialPortConnection->readStringUntil("}");
+        }
+        catch(timeout_exception& e)
+        { 
+            //timeout reading from serial port
+            std::cout << "Timeout waiting for response from serial port " + port + " from " + errStr + commandStr + " command.\n"; 
+            return false;
+        } 
+        catch(std::exception& e)
+        {
+            printf("ERROR: %s\n", e.what()); 
+        }
+        
+        if (response != "{K")
+        {
+            std::cout << "Unexpected response \"" + response + "\" to command " + errStr + commandStr + " from serial port " + port + "\n";
+            return false;
+        }
+        return true;
+    }
+    
+    bool MinerThread::sendMessage(MessageTypes messageType, std::string message)
+    {
+        std::string commandStr, errStr;
+        switch (messageType){
+            case KEY2: 
+                commandStr = "{2";
+                errStr = "Key2";
+                break;
+            case MESSAGE2:
+                commandStr = "{3";
+                errStr = "Message2";
+                break;
+        }
+        
+        cSerialPortConnection->writeString(commandStr + message + "}");
+        std::string response;
+        try
+        {
+            response = cSerialPortConnection->readStringUntil("}");
+        }
+        catch(timeout_exception& e)
+        { 
+            //timeout reading from serial port
+            std::cout << "Timeout waiting for response from serial port " + port + " after sending " + errStr + commandStr + message + "}.\n"; 
+            return false;
+        } 
+        catch(std::exception& e)
+        {
+            printf("ERROR: %s\n", e.what()); 
+        }
+        
+        if (response != "{K")
+        {
+            std::cout << "Unexpected response \"" + response + "\" to message " + errStr + commandStr + message + "} from serial port " + port + "\n";
+            return false;
+        }
+        return true;
+    }
+    
+    bool MinerThread::ping()
+    {
+        return sendCommand(PING);
+    }
+    
+    bool MinerThread::disableHashing()
+    {
+        return sendCommand(DISABLE_HASH);
+    }
+    
+    bool MinerThread::enableHashing()
+    {
+        return sendCommand(ENABLE_HASH);
+    }
+    
+    bool MinerThread::sendKey2()
+    {
+        MUTEX.lock();
+        std::string key2 = cBlock.GetKey2();                   
+        MUTEX.unlock();
+        sendMessage(KEY2, key2);
+    }
+    
+    bool MinerThread::sendMessage2()
+    {
+        MUTEX.lock();
+        std::string message2 = cBlock.GetMessage2();                   
+        MUTEX.unlock();
+        sendMessage(MESSAGE2, message2);
+        
+    }
 
-	/** Main Miner Thread. Bound to the class with boost. Might take some rearranging to get working with OpenCL. **/
-	void MinerThread::PrimeMiner()
-	{
-		loop
-		{
-			try
-			{
-				/** Keep thread at idle CPU usage if waiting to submit or recieve block. **/
-				Sleep(1);
-				
-				/** Assure that this thread stays idle when waiting for new block, or share submission. **/
-				if(fNewBlock || fBlockWaiting)
-					continue;
-				
-				/** Lock the Thread at this Mutex when Changing Block Pointer. **/
-				MUTEX.lock();
-				CBigNum BaseHash(cBlock.GetHash());
-				MUTEX.unlock();
-				
-				mpz_t zPrimeOrigin, zPrimeOriginOffset, zFirstSieveElement, zPrimorialMod, zTempVar, zResidue, zTwo, zN, zOctuplet;
-				unsigned int i = 0;
-				unsigned int j = 0;
-				unsigned int nSize = 0;
-				unsigned int nPrimeCount = 0;
-				unsigned int nSieveDifficulty = 0;
-				uint64 nStart = 0;
-				uint64 nStop = 0;
-				unsigned int nLastOffset = 0;
+    /** Main Miner Thread. Bound to the class with boost. Each Miner thread manages one USB com port.**/
+    /** Take your time. Try not to forget.  We never will. We're just a miner thread. **/
+    void MinerThread::HashMiner()
+    {
+        loop
+        {
+			
+            sleep(1);
+            /** Assure that this thread stays idle when waiting for new block, or share submission. **/
+            if(!fReadyToSend)
+                continue;
 
-				long nElapsedTime = 0;
-				long nStartTime = 0;
-				mpz_init(zPrimeOriginOffset);
-				mpz_init(zFirstSieveElement);
-				mpz_init(zPrimorialMod);
-				mpz_init(zOctuplet);
-				mpz_init(zTempVar);
-				mpz_init(zPrimeOrigin);
-				mpz_init(zResidue);
-				mpz_init_set_ui(zTwo, 2);
-				mpz_init(zN);
 
-				bignum2mpz(&BaseHash, zPrimeOrigin);
-				nSize = mpz_sizeinbase(zPrimeOrigin, 2);
-				unsigned char* bit_array_sieve = (unsigned char*)malloc((nBitArray_Size)/8);
-				for(j=0; j<256 && !fNewBlock && !fBlockWaiting; j++)
-				{
-					memset(bit_array_sieve, 0x00, (nBitArray_Size)/8);
+            //printf("Height: %u\n", cBlock.nHeight);
+            //printf("Channel: %u\n", cBlock.nChannel);
+            //printf("Version: %u\n", cBlock.nVersion);
+            //printf("Nonce: %llu\n", cBlock.nNonce);
+            //printf("Bits: %u\n", cBlock.nBits);
+            //printf("Hash Previous block: %s\n", cBlock.hashPrevBlock.ToString().c_str());
+            //printf("Merkle: %s\n", cBlock.hashMerkleRoot.ToString().c_str());
 
-					mpz_mod(zPrimorialMod, zPrimeOrigin, zPrimorial);
-					mpz_sub(zPrimorialMod, zPrimorial, zPrimorialMod);
+            //printf("Hash: %s\n", cBlock.GetHash().ToString().c_str());
+            std::cout << "Key2: " << cBlock.GetKey2() << "\n" << "Message2: " << cBlock.GetMessage2() << "\n";
 
-					mpz_mod(zPrimorialMod, zPrimorialMod, zPrimorial);
-					
-					mpz_import( zOctuplet, 1, 1, sizeof(octuplet_origins[j]), 0, 0, &octuplet_origins[j]);
-					mpz_add(zPrimorialMod, zPrimorialMod, zOctuplet);
-					
-					mpz_add(zTempVar, zPrimeOrigin, zPrimorialMod);
+            //serial port commands
+            ping();
+            disableHashing();
+            sendKey2();
+            sendMessage2();
+            enableHashing();
+            fReadyToSend = false;
 
-					mpz_set(zFirstSieveElement, zTempVar);
+            std::string response;
+            //poll serial port for a found nonce
+            while (!fReadyToSend)
+            {
+                try
+                {
+                    response = cSerialPortConnection->readStringUntil("}");
+                    if (response.length()>1 && response[1] == "4");
+                    {
+                    //We found a nonce.  Convert from hex string to uint64
+                    std::istringstream converter(response.substr(3));
+                    converter >> std::hex >> cBlock.nNonce;
+                    //Submit the block.
+                    cServerConnection->SubmitBlock(cBlock);
+                    std::cout << "Found a Nonce: " << response.substr(3) << "\n";
+                    disableHashing();
+                    fNewBlock = true; //need a new block
+                    }
+                }
+                catch(timeout_exception& e)
+                { 
+                    // Timeouts are normal.  Do nothing
+                    //std::cout<<"Normal Timeout.\n";
+                } 
+                catch(std::exception& e)
+                {
+                    //Something unexpected happened
+                    printf("ERROR: %s\n", e.what()); 
+                }
+        
+                
 
-					for(unsigned int i=nPrimorialEndPrime; i<nPrimeLimit && !fNewBlock && !fBlockWaiting; i++)
-					{
-						unsigned long  p = primes[i];
-						unsigned int inv = inverses[i];
-						unsigned int base_remainder = mpz_tdiv_ui(zTempVar, p);
+                Sleep(1);
+            }
 
-						unsigned int remainder = base_remainder;
-						unsigned long r = (p-remainder)*inv;
-						unsigned int index = r % p;
-						while(index < nBitArray_Size)
-						{
-							bit_array_sieve[(index)>>3] |= (1<<((index)&7));
-							index += p;
-						}
-						
-						remainder = base_remainder + 2;
-						if (p<remainder)
-							remainder -= p;
-						r = (p-remainder)*inv;
-						index = r % p;
-						while(index < nBitArray_Size)
-						{
-							bit_array_sieve[(index)>>3] |= (1<<((index)&7));
-							index += p;
-						}
-
-						remainder = base_remainder + 6;
-						if (p<remainder)
-							remainder -= p;
-						r = (p-remainder)*inv;
-						index = r % p;
-						while(index < nBitArray_Size)
-						{
-							bit_array_sieve[(index)>>3] |= (1<<((index)&7));
-							index += p;
-						}
-
-						remainder = base_remainder + 8;
-						if (p<remainder)
-							remainder -= p;
-						r = (p - remainder) * inv;
-						index = r % p;
-						while(index < nBitArray_Size)
-						{
-								bit_array_sieve[(index)>>3] |= (1<<((index)&7));
-							index += p;
-						}
-						
-						remainder = base_remainder + 12;
-						if (p<remainder)
-							remainder -= p;
-						r = (p - remainder) * inv;
-						index = r % p;
-						while(index < nBitArray_Size)
-						{
-							bit_array_sieve[(index)>>3] |= (1<<((index)&7));
-							index += p;
-						}
-						
-						nSieves++;
-					}
-
-					for(i=0; i<nBitArray_Size && !fNewBlock && !fBlockWaiting; i++)
-					{
-						if( bit_array_sieve[(i)>>3] & (1<<((i)&7)) )
-							continue;
-							
-						/** Get the Prime origin from Primorial and Sieve. **/
-						mpz_mul_ui(zTempVar, zPrimorial, i);
-						mpz_add(zTempVar, zFirstSieveElement, zTempVar);
-						mpz_set(zPrimeOriginOffset, zTempVar);
-
-						
-						/** Ensure Number is Prime before Checking Cluster. **/
-						mpz_sub_ui(zN, zTempVar, 1);
-						mpz_powm(zResidue, zTwo, zN, zTempVar);
-						if (mpz_cmp_ui(zResidue, 1) != 0)
-							continue;
-						
-						nPrimes++;
-						
-						
-						nPrimeCount = 1;
-						nLastOffset = 2;
-						unsigned int nPrimeGap = 2;
-
-						
-						/** Determine with GMP the size of possible cluster at this prime. **/
-						while(nPrimeGap <= 12)
-						{
-							mpz_add_ui(zTempVar, zTempVar, 2);
-							
-							mpz_sub_ui(zN, zTempVar, 1);
-							mpz_powm(zResidue, zTwo, zN, zTempVar);
-							if (mpz_cmp_ui(zResidue, 1) == 0)
-							{
-								nPrimeGap = 2;
-								nPrimeCount++;
-								nPrimes++;
-							}
-							else
-								nPrimeGap  += 2;
-								
-							nLastOffset+=2;
-						}
-						
-
-						if(nPrimeCount >= 2)
-						{	
-							/** Increment the Chain Counter if Cluster is above size 3. **/
-							nChains++;
-							
-							/** Obtain the nNonce value from the Temporary mpz. **/
-							mpz_sub(zTempVar, zPrimeOriginOffset, zPrimeOrigin);
-							cBlock.nNonce = mpz2uint64(zTempVar);
-							
-							/** Run Small Check from Sieve Before Costly Cluster Check. **/
-							//if(SetBits(GetSieveDifficulty(cBlock.GetPrime() + nLastOffset, nPrimeCount)) < cBlock.nBits)
-							//	continue;
-							
-							/** Check that the Prime Cluster is large enough. **/
-							std::vector<unsigned int> vPrimes;
-							unsigned int nBits = GetPrimeBits(cBlock.GetPrime(), 1, vPrimes);
-							if(nBits >= cBlock.nBits)
-							{
-								printf("[MASTER] Prime Cluster Found of Difficulty %f [", nBits / 10000000.0);
-								
-								for(int nIndex = 0; nIndex < vPrimes.size() - 1; nIndex++)
-									printf(" + %u,", vPrimes[nIndex]);
-									
-								printf(" + %u ]\n\n%s\n\n", vPrimes[vPrimes.size() - 1], cBlock.GetPrime().ToString().c_str());
-								cServerConnection->SubmitBlock(cBlock);
-
-								break;
-							}
-						}
-					}
-				}
-
-				mpz_clear(zPrimeOrigin);
-				mpz_clear(zPrimeOriginOffset);
-				mpz_clear(zFirstSieveElement);
-				mpz_clear(zResidue);
-				mpz_clear(zTwo);
-				mpz_clear(zN);
-				mpz_clear(zPrimorialMod);
-				mpz_clear(zTempVar);
-				mpz_clear(zOctuplet);
-
-				free(bit_array_sieve);
-				
-				fNewBlock = true;
-				fBlockWaiting = false;
-			}
-			catch(std::exception& e){ printf("ERROR: %s\n", e.what()); }
-		}
-	}
+        }
+    }
 	
 
 	/** Reset the block on each of the Threads. **/
 	void ServerConnection::ResetThreads()
 	{
-		
+            //std::cout << "Reset Threads.\n";
 		/** Reset each individual flag to tell threads to stop mining. **/
 		for(int nIndex = 0; nIndex < THREADS.size(); nIndex++)
 		{
+                        THREADS[nIndex]->MUTEX.lock();
 			THREADS[nIndex]->fNewBlock      = true;
 			THREADS[nIndex]->fBlockWaiting  = false;
+                        THREADS[nIndex]->MUTEX.unlock();
 		}
 		
 		/** Reset the Block Height Timer. **/
@@ -311,17 +286,17 @@ namespace Core
 				{
 					unsigned int SecondsElapsed = (unsigned int)time(0) - nStartTimer;
 					unsigned int nElapsed = METER_TIMER.Elapsed();
-					double PPS = (double) nPrimes / nElapsed;
-					double CPS = (double) nChains / nElapsed;
-					double CSD = (double) (nBlocks * 60.0) / (SecondsElapsed / 60.0);
+					//double PPS = (double) nPrimes / nElapsed;
+					//double CPS = (double) nChains / nElapsed;
+					//double CSD = (double) (nBlocks * 60.0) / (SecondsElapsed / 60.0);
 					
-					nPrimes = 0;
-					nChains = 0;
+					//nPrimes = 0;
+					//nChains = 0;
 					
-					printf("[METERS] %f PPS | %f CPS | %u Blocks | %f NXS per Hour | Height = %u | Difficulty %f | %02d:%02d:%02d\n", PPS, CPS, nBlocks, CSD, nBestHeight, nDifficulty / 10000000.0, (SecondsElapsed/3600)%60, (SecondsElapsed/60)%60, (SecondsElapsed)%60);
+					printf("[STATS] XXX.XX MH/s | A= R= | Difficulty | %02d:%02d:%02d\n", (SecondsElapsed/3600)%60, (SecondsElapsed/60)%60, (SecondsElapsed)%60);
 					METER_TIMER.Reset();	
 					
-					ResetThreads();
+					//ResetThreads();
 				}
 				
 				
@@ -331,9 +306,11 @@ namespace Core
 					/** Attempt to get a new block from the Server if Thread needs One. **/
 					if(THREADS[nIndex]->fNewBlock)
 					{
+                                                THREADS[nIndex]->MUTEX.lock();
 						CLIENT->GetBlock();
 						THREADS[nIndex]->fBlockWaiting = true;
 						THREADS[nIndex]->fNewBlock = false;
+                                                THREADS[nIndex]->MUTEX.unlock();
 					}
 				}
 					
@@ -396,7 +373,25 @@ namespace Core
 							THREADS[nIndex]->cBlock.nHeight       = bytes2uint(std::vector<unsigned char>(PACKET.DATA.end() - 16, PACKET.DATA.end() - 12));
 							THREADS[nIndex]->cBlock.nBits         = bytes2uint(std::vector<unsigned char>(PACKET.DATA.end() - 12,  PACKET.DATA.end() - 8));
 							THREADS[nIndex]->cBlock.nNonce        = bytes2uint64(std::vector<unsigned char>(PACKET.DATA.end() - 8,  PACKET.DATA.end()));
-							THREADS[nIndex]->MUTEX.unlock();
+							
+                                                        //THREADS[nIndex]->cBlock.nVersion      = 4;
+							//reverse the byte order from nxsorbitalscan
+				//			THREADS[nIndex]->cBlock.hashPrevBlock.SetHex ("a793e4310d6957c758f287f462bebfbb562d25d3d8d79716a53304272d76faa68a09fc5e3a2d0005d55b1b651f401b9f482456f6c421512daf55f2f670135d02a544fad7631e4b715b0013dfc8968ee60898e8b50d8dda813e45e5e0186a3aed9e6f1d1162673e62fe393f0e9b4698c705cf93d5ca009ba2d201635402090000");
+				//			THREADS[nIndex]->cBlock.hashMerkleRoot.SetHex("25303a6d34a2a89e91ecb814f50d16a62944417c4322b45038c79422419ad45f90bef6ebbe075baa0450f788d03e1940316ac2434f1cfd30cd0742fc58a4f531");
+							//THREADS[nIndex]->cBlock.hashPrevBlock.SetHex ("00000902546301d2a29b00cad593cf05c798469b0e3f39fe623e6762111d6f9eed3a6a18e0e5453e81da8d0db5e89808e68e96c8df13005b714b1e63d7fa44a5025d1370f6f255af2d5121c4f65624489f1b401f651b5bd505002d3a5efc098aa6fa762d270433a51697d7d8d3252d56bbbfbe62f487f258c757690d31e493a7");
+							//THREADS[nIndex]->cBlock.hashMerkleRoot.SetHex("31f5a458fc4207cd30fd1c4f43c26a3140193ed088f75004aa5b07beebf6be905fd49a412294c73850b422437c414429a6160df514b8ec919ea8a2346d3a3025");
+							
+                                                        
+                                                        
+							//THREADS[nIndex]->cBlock.nChannel      = 2;
+							//THREADS[nIndex]->cBlock.nHeight       = 2023276;
+							//THREADS[nIndex]->cBlock.nBits         = 0x7b032ed8;
+							//THREADS[nIndex]->cBlock.nNonce        = 21155560019;
+							
+                                                        
+                                                        
+                                                        
+                                                        
 							
 							if(THREADS[nIndex]->cBlock.nHeight < nBestHeight)
 							{
@@ -411,6 +406,8 @@ namespace Core
 								
 							printf("[MASTER] Block %s Height = %u Received on Thread %u\n", THREADS[nIndex]->cBlock.hashMerkleRoot.ToString().substr(0, 20).c_str(), THREADS[nIndex]->cBlock.nHeight, nIndex);
 							THREADS[nIndex]->fBlockWaiting = false;
+                                                        THREADS[nIndex]->fReadyToSend = true;
+                                                        THREADS[nIndex]->MUTEX.unlock();
 								
 							break;
 						}
@@ -433,8 +430,8 @@ int main(int argc, char *argv[])
 	if(argc < 3)
 	{
 		printf("Too Few Arguments. The Required Arguments are 'IP PORT'\n");
-		printf("Default Arguments are Total Threads = CPU Cores and Connection Timeout = 10 Seconds\n");
-		printf("Format for Arguments is 'IP PORT THREADS TIMEOUT'\n");
+		printf("Default Arguments: Connection Timeout = 10 Seconds\n");
+		printf("Format for Arguments is 'IP PORT TIMEOUT'\n");
 		
 		Sleep(10000);
 		
@@ -444,24 +441,24 @@ int main(int argc, char *argv[])
 	std::string IP = argv[1];
 	std::string PORT = argv[2];
 	
-	int nThreads = GetTotalCores(), nTimeout = 10;
+	int nThreads = 1, nTimeout = 10;
+        //use 1 thread per com port used.
 	
 	if(argc > 3)
-		nThreads = boost::lexical_cast<int>(argv[3]);
+		nTimeout = boost::lexical_cast<int>(argv[3]);
 	
-	if(argc > 4)
-		nTimeout = boost::lexical_cast<int>(argv[4]);
-	
-	printf("Coinshield Prime Solo Miner 1.0.0 - Created by Videlicet - Optimized by Supercomputing\n");
-	printf("The Meter Has 2 Values:\nPPS = Primes Per Second\nCPS = Clusters Per Second [Of larger than 3.x Difficulty]\n\n");
-	Sleep(2000);
-	
+	printf("Nexus Hash Channel Solo Miner For Aperture XXX v0.1\n");
+	//Sleep(2000);
+        //Todo: 
+        //Read config file for desired com ports and/or perform auto detect for connected devices
+        // for now hardcode the list of com ports
+	std::vector<std::string> comPorts{"/dev/ttyUSB0"};
+        
 	printf("Initializing Miner %s:%s Threads = %i Timeout = %i\n", IP.c_str(), PORT.c_str(), nThreads, nTimeout);
 	
-	Core::InitializePrimes();
 	nStartTimer = (unsigned int)time(0);
 	
-	Core::ServerConnection MINERS(IP, PORT, nThreads, nTimeout);
+	Core::ServerConnection MINERS(IP, PORT, comPorts, nTimeout);
 	loop { Sleep(10); }
 	
 	return 0;

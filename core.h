@@ -2,7 +2,11 @@
 #define COINSHIELD_LLP_CORE_H
 
 #include "types.h"
+#include "TimeoutSerial.h"
 #include <queue>
+#include <sstream>
+#include <iomanip>
+
 
 namespace LLP
 {
@@ -186,8 +190,22 @@ namespace Core
 			
 		uint1024 GetHash() const
 		{
-			return SK1024(BEGIN(nVersion), END(nBits));
+			//return SK1024(BEGIN(nVersion), END(nBits));  //for prime channel
+                    return SK1024(BEGIN(nVersion), END(nNonce)); // for hash channel
 		}
+                
+                std::string GetKey2() const
+		{
+                    return SKEINKEY2(BEGIN(nVersion), END(nNonce));
+		}
+                
+                std::string GetMessage2() const
+		{
+                    return SKEINMESSAGE2(BEGIN(nVersion), END(nNonce));
+		}
+               
+                
+                
 		
 		CBigNum GetPrime() const
 		{
@@ -198,22 +216,50 @@ namespace Core
 	
 	
 	/** Class to hold the basic data a Miner will use to build a Block.
-		Used to allow one Connection for any amount of threads. **/
+		Used to allow one Wallet Connection for any amount of threads. **/
 	class MinerThread
 	{
 	public:
-		ServerConnection* cServerConnection;
-		
-		CBlock cBlock;
-		unsigned int nDifficulty;
-		
-		bool fNewBlock, fBlockWaiting;
-		LLP::Thread_t THREAD;
-		boost::mutex MUTEX;
-		
-		MinerThread(ServerConnection* cConnection) : cServerConnection(cConnection), fNewBlock(true), fBlockWaiting(false), THREAD(boost::bind(&MinerThread::PrimeMiner, this)) { }
+            ServerConnection* cServerConnection;
+            std::string port;
+            unsigned baud;
 
-		void PrimeMiner();
+            //each thread has its own com port connection
+            TimeoutSerial* cSerialPortConnection;
+
+            CBlock cBlock;
+            unsigned int nDifficulty;
+
+            bool fNewBlock, fBlockWaiting, fReadyToSend;
+            LLP::Thread_t THREAD;
+            boost::mutex MUTEX;
+
+            MinerThread(ServerConnection* cConnection, std::string port, unsigned baud) 
+                : cServerConnection(cConnection), port(port), baud(baud),
+                fNewBlock(true), fBlockWaiting(false), fReadyToSend(false),
+                THREAD(boost::bind(&MinerThread::HashMiner, this))  
+            {
+                cSerialPortConnection = new TimeoutSerial();
+                cSerialPortConnection->open(port, baud);
+                //set serial port timeout
+                cSerialPortConnection->setTimeout(boost::posix_time::seconds(1));
+            }
+            
+            enum Commands {PING, ENABLE_HASH, DISABLE_HASH};
+            enum MessageTypes {KEY2, MESSAGE2};
+            void HashMiner();
+            bool sendCommand(Commands command);
+            bool sendMessage(MessageTypes messageType, std::string message);
+            bool ping();
+            bool enableHashing();
+            bool disableHashing();
+            bool sendKey2();
+            bool sendMessage2();
+            bool readMessage();
+                
+        private:
+            
+               
 	};
 	
 		/** Class to handle all the Connections via Mining LLP.
@@ -228,16 +274,19 @@ namespace Core
 		LLP::Timer    METER_TIMER;
 		LLP::Timer    HEIGHT_TIMER;
 		std::string   IP, PORT;
+                std::vector<std::string> comPorts;
 		
 		boost::mutex    SUBMIT_MUTEX;
 
 		std::queue<CBlock> SUBMIT_QUEUE;
 		std::queue<CBlock> RESPONSE_QUEUE;
 		
-		ServerConnection(std::string ip, std::string port, int nMaxThreads, int nMaxTimeout) : IP(ip), PORT(port), METER_TIMER(), HEIGHT_TIMER(), nThreads(nMaxThreads), nTimeout(nMaxTimeout), THREAD(boost::bind(&ServerConnection::ServerThread, this))
+		ServerConnection(std::string ip, std::string port, std::vector<std::string> comPorts, int nMaxTimeout) 
+                    : IP(ip), PORT(port), METER_TIMER(), HEIGHT_TIMER(), comPorts(comPorts), nThreads(static_cast<int>(comPorts.size())), nTimeout(nMaxTimeout), THREAD(boost::bind(&ServerConnection::ServerThread, this))
+              
 		{
 			for(int nIndex = 0; nIndex < nThreads; nIndex++)
-				THREADS.push_back(new MinerThread(this));
+				THREADS.push_back(new MinerThread(this, comPorts[nIndex], 115200));
 		}
 		
 		/** Reset the block on each of the Threads. **/

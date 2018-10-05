@@ -27,13 +27,13 @@ uint64 mpz2uint64(mpz_t n)
 
     return (((uint64)hi) << 32) + lo;
 }
-
+/*
 int bignum2mpz(const BIGNUM *bn, mpz_t g)
 {
 	bn_check_top(bn);
 	if(((sizeof(bn->d[0]) * 8) == GMP_NUMB_BITS) && (BN_BITS2 == GMP_NUMB_BITS)) 
 	{
-		/* The common case */
+		
 		if(!_mpz_realloc (g, bn->top))
 			return 0;
 		memcpy(&g->_mp_d[0], &bn->d[0], bn->top * sizeof(bn->d[0]));
@@ -60,7 +60,7 @@ static int mpz2bignum(mpz_t g, BIGNUM *bn)
 {
 	if(((sizeof(bn->d[0]) * 8) == GMP_NUMB_BITS) && (BN_BITS2 == GMP_NUMB_BITS))
 	{
-		/* The common case */
+	
 		int s = (g->_mp_size >= 0) ? g->_mp_size : -g->_mp_size;
 		BN_zero(bn);
 		
@@ -89,4 +89,4 @@ static int mpz2bignum(mpz_t g, BIGNUM *bn)
 		return toret;
 	}
 }
-
+*/

@@ -186,4 +186,75 @@ inline uint1024 SK1024(const T1 pbegin, const T1 pend)
     return keccak;
 }
 
+//convert a number to a hex string
+template <typename I> std::string n2hexstr(I w, size_t hex_len = sizeof(I)<<1) {
+    static const char* digits = "0123456789ABCDEF";
+    std::string rc(hex_len,'0');
+    for (size_t i=0, j=(hex_len-1)*4 ; i<hex_len; ++i,j-=4)
+        rc[i] = digits[(w>>j) & 0x0f];
+    return rc;
+}
+
+/** Hashing template to get the key2 intermediate value **/
+template<typename T1>
+inline std::string SKEINKEY2(const T1 pbegin, const T1 pend)
+{
+    static unsigned char pblank[1];
+
+    Skein1024_Ctxt_t ctx;
+    Skein1024_Init(&ctx, 1024); //initialize the state using precalculated value
+    //perform the 2nd round of skein
+    Skein1024_Update(&ctx, (pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]));
+    
+    std::string key2; 
+    unsigned int i;
+    for (i=0; i<SKEIN1024_STATE_WORDS; i++)
+    {
+        //convert intermediate result to string.  
+        key2.append(n2hexstr(ctx.X[i]));
+    }
+    //calculate the final word in the key
+    uint64 finalWord;
+    finalWord = ctx.X[ 0] ^ ctx.X[ 1] ^ ctx.X[ 2] ^ ctx.X[ 3] ^
+                 ctx.X[ 4] ^ ctx.X[ 5] ^ ctx.X[ 6] ^ ctx.X[ 7] ^
+                 ctx.X[ 8] ^ ctx.X[ 9] ^ ctx.X[10] ^ ctx.X[11] ^
+                 ctx.X[12] ^ ctx.X[13] ^ ctx.X[14] ^ ctx.X[15] ^ SKEIN_KS_PARITY;
+    
+    key2.append(n2hexstr(finalWord));
+    return key2;
+    
+}
+
+
+/** Hashing template to get message to send to the miner **/
+template<typename T1>
+inline std::string SKEINMESSAGE2(const T1 pbegin, const T1 pend)
+{
+    static unsigned char pblank[1];
+
+    Skein1024_Ctxt_t ctx;
+    Skein1024_Init(&ctx, 1024); //initialize the state using precalculated value
+    //perform the 2nd round of skein
+    Skein1024_Update(&ctx, (pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]));
+    
+    constexpr char hexmap[] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                           '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    
+    //initialize to all zeros
+    std::string s(SKEIN1024_BLOCK_BYTES * 2, '0');
+    
+    int j, wordIndex;
+    //rearrange the byte order and convert to ascii characters
+    //only the first 88 bytes are valid. 
+    for (int i = 0; i < ctx.h.bCnt; ++i) {
+        wordIndex = i/8; //8 bytes per 64 bit word 
+        j = 7-(i%8);
+        s[2 * i]     = hexmap[(ctx.b[wordIndex*8+j] & 0xF0) >> 4];
+        s[2 * i + 1] = hexmap[ctx.b[wordIndex*8+j] & 0x0F];
+    }
+    
+    return s;
+}
+
+
 #endif

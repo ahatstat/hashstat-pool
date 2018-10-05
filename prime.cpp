@@ -290,7 +290,7 @@ namespace Core
 		CAutoBN_CTX pctx;
 		CBigNum e = n - 1;
 		CBigNum r;
-		BN_mod_exp(&r, &a, &e, &n, pctx);
+		//BN_mod_exp(&r, &a, &e, &n, pctx);
 		
 		return r;
 	}
@@ -298,7 +298,8 @@ namespace Core
 	/** Miller-Rabin Primality Test from the OpenSSL BN Library. **/
 	bool Miller_Rabin(CBigNum n, int checks)
 	{
-		return (BN_is_prime(&n, checks, NULL, NULL, NULL) == 1);
+		//return (BN_is_prime(&n, checks, NULL, NULL, NULL) == 1);
+		return true;
 	}
 }
 
