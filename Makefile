@@ -17,8 +17,6 @@ LIBS += \
    -l boost_filesystem$(BOOST_LIB_SUFFIX) \
    -l boost_program_options$(BOOST_LIB_SUFFIX) \
    -l boost_thread$(BOOST_LIB_SUFFIX) \
-   -l crypto \
-   -l gmp
 
 DEBUGFLAGS=-g
 CXXFLAGS=
