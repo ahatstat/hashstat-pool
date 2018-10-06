@@ -372,8 +372,12 @@ namespace Core
 							THREADS[nIndex]->cBlock.nChannel      = bytes2uint(std::vector<unsigned char>(PACKET.DATA.end() - 20, PACKET.DATA.end() - 16));
 							THREADS[nIndex]->cBlock.nHeight       = bytes2uint(std::vector<unsigned char>(PACKET.DATA.end() - 16, PACKET.DATA.end() - 12));
 							THREADS[nIndex]->cBlock.nBits         = bytes2uint(std::vector<unsigned char>(PACKET.DATA.end() - 12,  PACKET.DATA.end() - 8));
-							THREADS[nIndex]->cBlock.nNonce        = bytes2uint64(std::vector<unsigned char>(PACKET.DATA.end() - 8,  PACKET.DATA.end()));
+							//THREADS[nIndex]->cBlock.nNonce        = bytes2uint64(std::vector<unsigned char>(PACKET.DATA.end() - 8,  PACKET.DATA.end()));
 							
+                                                        
+                                                        //set the starting nonce for each com port.  The default from the wallet is 1. We will use zero.
+                                                        THREADS[nIndex]->cBlock.nNonce        = 0 + nIndex*exp2(52);
+                                                        
                                                         //THREADS[nIndex]->cBlock.nVersion      = 4;
 							//reverse the byte order from nxsorbitalscan
 				//			THREADS[nIndex]->cBlock.hashPrevBlock.SetHex ("a793e4310d6957c758f287f462bebfbb562d25d3d8d79716a53304272d76faa68a09fc5e3a2d0005d55b1b651f401b9f482456f6c421512daf55f2f670135d02a544fad7631e4b715b0013dfc8968ee60898e8b50d8dda813e45e5e0186a3aed9e6f1d1162673e62fe393f0e9b4698c705cf93d5ca009ba2d201635402090000");

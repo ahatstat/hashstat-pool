@@ -16,7 +16,7 @@ LIBS += \
    -l boost_system$(BOOST_LIB_SUFFIX) \
    -l boost_filesystem$(BOOST_LIB_SUFFIX) \
    -l boost_program_options$(BOOST_LIB_SUFFIX) \
-   -l boost_thread$(BOOST_LIB_SUFFIX) 
+   -l boost_thread$(BOOST_LIB_SUFFIX) \
 
 DEBUGFLAGS=-g
 CXXFLAGS=
