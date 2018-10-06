@@ -106,6 +106,7 @@ namespace LLP
 					
 			SCORE[nTime].second++;
 			nIterator = nTime;
+                        return *this;
 		}
 	};
 	
@@ -118,7 +119,7 @@ namespace LLP
 	public:
 		DDOS_Score rSCORE, cSCORE;
 			
-		DDOS_Filter(unsigned int nTimespan) : rSCORE(nTimespan), cSCORE(nTimespan), BANTIME(0), TOTALBANS(0) { }
+		DDOS_Filter(unsigned int nTimespan) : BANTIME(0), TOTALBANS(0), rSCORE(nTimespan), cSCORE(nTimespan) { }
 		
 		void Ban()
 		{
@@ -232,8 +233,8 @@ namespace LLP
 		
 		
 		/** Connection Constructors **/
-		Connection() : SOCKET(), DDOS(NULL), INCOMING(), CONNECTED(false) { INCOMING.SetNull(); }
-		Connection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN ) : SOCKET(SOCKET_IN), DDOS(DDOS_IN), INCOMING(), CONNECTED(true) { TIMER.Start(); }
+		Connection() : INCOMING(), SOCKET(), CONNECTED(false), DDOS(NULL)  { INCOMING.SetNull(); }
+		Connection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN ) : INCOMING(), SOCKET(SOCKET_IN),  CONNECTED(true), DDOS(DDOS_IN) { TIMER.Start(); }
 		
 		
 		/** Checks for any flags in the Error Handle. **/

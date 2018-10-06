@@ -9,11 +9,11 @@
 #ifndef COINSHIELD_UINT1024_H
 #define COINSHIELD_UINT1024_H
 
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
-#include <string>
-#include <vector>
+//#include <limits.h>
+//#include <stdio.h>
+//#include <string.h>
+//#include <string>
+//#include <vector>
 
 typedef long long  int64;
 typedef unsigned long long  uint64;

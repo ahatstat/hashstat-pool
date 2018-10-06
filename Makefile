@@ -35,7 +35,6 @@ OBJS= \
 	build/KeccakHash.o \
 	build/util.o \
 	build/TimeoutSerial.o \
-	build/prime.o \
 	build/miner.o
 
 

@@ -4,20 +4,20 @@
 #include "types.h"
 #include "TimeoutSerial.h"
 #include <queue>
-#include <sstream>
-#include <iomanip>
 
 
 namespace LLP
 {
 	class Outbound : public Connection
 	{
-		Service_t IO_SERVICE;
-		std::string IP, PORT;
+            std::string IP;
+            std::string PORT;
+            Service_t IO_SERVICE;
+		
 		
 	public:
 		/** Outgoing Client Connection Constructor **/
-		Outbound(std::string ip, std::string port) : IP(ip), PORT(port), Connection() { }
+		Outbound(std::string ip, std::string port) : Connection(), IP(ip), PORT(port) { }
 		
 		bool Connect()
 		{
@@ -136,6 +136,7 @@ namespace Core
 {
 	class ServerConnection;
 	
+        /*
 	extern unsigned int *primes;
 	extern unsigned int *inverses;
 
@@ -160,7 +161,7 @@ namespace Core
 	bool PrimeCheck(CBigNum test, int checks);
 	CBigNum FermatTest(CBigNum n, CBigNum a);
 	bool Miller_Rabin(CBigNum n, int checks);
-	
+	*/
 	
 	class CBlock
 	{
@@ -207,10 +208,7 @@ namespace Core
                 
                 
 		
-		CBigNum GetPrime() const
-		{
-			return CBigNum(GetHash() + nNonce);
-		}
+		
 	};
 	
 	
@@ -268,13 +266,16 @@ namespace Core
 	{
 	public:
 		LLP::Miner* CLIENT;
+                std::string   IP, PORT;
+                LLP::Timer    METER_TIMER;
+		LLP::Timer    HEIGHT_TIMER;
+                std::vector<std::string> comPorts;
 		int nThreads, nTimeout;
 		std::vector<MinerThread*> THREADS;
 		LLP::Thread_t THREAD;
-		LLP::Timer    METER_TIMER;
-		LLP::Timer    HEIGHT_TIMER;
-		std::string   IP, PORT;
-                std::vector<std::string> comPorts;
+		
+		
+                
 		
 		boost::mutex    SUBMIT_MUTEX;
 

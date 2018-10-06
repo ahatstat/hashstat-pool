@@ -3,28 +3,18 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "hash/templates.h"
-#include "bignum.h"
 
 #ifdef WIN32
 	typedef int pid_t;
 #else
-	#include <sys/types.h>
-	#include <sys/time.h>
-	#include <sys/resource.h>
+
 #endif
 
-#include <string>
-#include <vector>
-#include <stdio.h>
-#include <cstdlib>
-#include <iostream>
-#include <boost/bind.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/smart_ptr.hpp>
+
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gmp.h>
+
 
 
 #define loop                for(;;)
@@ -34,14 +24,7 @@
 #define LOCK(a)             boost::lock_guard<boost::mutex> lock(a)
 
 
-int GetTotalCores();
 
-/** Convert an mpz into 64 bit unsigned integer. Used in replacement of mpz_get_ui. **/
-uint64 mpz2uint64(mpz_t z);
-
-
-/** Convert a Bignum into Mpz integer for GMP. **/
-int bignum2mpz(const BIGNUM *bn, mpz_t g);
 
 
 /** Convert a 32 bit Unsigned Integer to Byte Vector using Bitwise Shifts. **/

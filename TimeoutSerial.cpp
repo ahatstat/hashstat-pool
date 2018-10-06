@@ -128,6 +128,7 @@ void TimeoutSerial::read(char *data, size_t size)
                 port.cancel();
                 throw(boost::system::system_error(boost::system::error_code(),
                         "Error while reading"));
+            case resultInProgress:{}
             //if resultInProgress remain in the loop
         }
     }
@@ -188,6 +189,7 @@ std::string TimeoutSerial::readStringUntil(const std::string& delim)
                 port.cancel();
                 throw(boost::system::system_error(boost::system::error_code(),
                         "Error while reading"));
+            case resultInProgress:{}
             //if resultInProgress remain in the loop
         }
     }

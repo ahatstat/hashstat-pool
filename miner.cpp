@@ -124,7 +124,7 @@ namespace Core
         MUTEX.lock();
         std::string key2 = cBlock.GetKey2();                   
         MUTEX.unlock();
-        sendMessage(KEY2, key2);
+        return sendMessage(KEY2, key2);
     }
     
     bool MinerThread::sendMessage2()
@@ -132,7 +132,7 @@ namespace Core
         MUTEX.lock();
         std::string message2 = cBlock.GetMessage2();                   
         MUTEX.unlock();
-        sendMessage(MESSAGE2, message2);
+        return sendMessage(MESSAGE2, message2);
         
     }
 
@@ -175,16 +175,16 @@ namespace Core
                 try
                 {
                     response = cSerialPortConnection->readStringUntil("}");
-                    if (response.length()>1 && response[1] == "4");
+                    if (response.length()>1 && response.substr(1,1) == "4")
                     {
-                    //We found a nonce.  Convert from hex string to uint64
-                    std::istringstream converter(response.substr(3));
-                    converter >> std::hex >> cBlock.nNonce;
-                    //Submit the block.
-                    cServerConnection->SubmitBlock(cBlock);
-                    std::cout << "Found a Nonce: " << response.substr(3) << "\n";
-                    disableHashing();
-                    fNewBlock = true; //need a new block
+                        //We found a nonce.  Convert from hex string to uint64
+                        std::istringstream converter(response.substr(3));
+                        converter >> std::hex >> cBlock.nNonce;
+                        //Submit the block.
+                        cServerConnection->SubmitBlock(cBlock);
+                        std::cout << "Found a Nonce: " << response.substr(3) << "\n";
+                        disableHashing();
+                        fNewBlock = true; //need a new block
                     }
                 }
                 catch(timeout_exception& e)
@@ -285,7 +285,7 @@ namespace Core
 				if(METER_TIMER.Elapsed() > 15)
 				{
 					unsigned int SecondsElapsed = (unsigned int)time(0) - nStartTimer;
-					unsigned int nElapsed = METER_TIMER.Elapsed();
+					//unsigned int nElapsed = METER_TIMER.Elapsed();
 					//double PPS = (double) nPrimes / nElapsed;
 					//double CPS = (double) nChains / nElapsed;
 					//double CSD = (double) (nBlocks * 60.0) / (SecondsElapsed / 60.0);
