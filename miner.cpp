@@ -5,10 +5,8 @@
 unsigned int nBestHeight = 0;
 unsigned int nStartTimer = 0;
 
-unsigned int nPrimes = 0;
-unsigned int nChains = 0;
-unsigned int nSieves = 0;
 unsigned int nBlocks = 0;
+unsigned int nRejects = 0;
 
 
 unsigned int nDifficulty   = 0;
@@ -295,7 +293,7 @@ namespace Core
 					//nPrimes = 0;
 					//nChains = 0;
 					
-					printf("[STATS] XXX.XX MH/s | A= R= | Difficulty | %02d:%02d:%02d\n", (SecondsElapsed/3600)%60, (SecondsElapsed/60)%60, (SecondsElapsed)%60);
+					printf("[STATS] XXX.XX MH/s | A=%i R=%i | Difficulty | %02d:%02d:%02d\n", nBlocks, nRejects, (SecondsElapsed/3600)%60, (SecondsElapsed/60)%60, (SecondsElapsed)%60);
 					METER_TIMER.Reset();	
 					
 					//ResetThreads();
@@ -338,9 +336,10 @@ namespace Core
 				/** Output if a Share is Rejected. **/
 				else if(PACKET.HEADER == CLIENT->FAIL) 
 				{
-					printf("[MASTER] Nexus : Block REJECTED\n");
+                                    nRejects++;
+                                    printf("[MASTER] Nexus : Block REJECTED\n");
 					
-					ResetThreads();
+                                    ResetThreads();
 				}
 					
 				/** Reset the Threads if a New Block came in. **/
