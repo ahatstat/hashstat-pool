@@ -81,6 +81,7 @@ namespace Core
         
         cSerialPortConnection->writeString(commandStr + message + "}");
         std::string response;
+        /*  FPGA bug - FPGA doesn't respond to a message write
         try
         {
             response = cSerialPortConnection->readStringUntil("}");
@@ -101,6 +102,7 @@ namespace Core
             std::cout << "Unexpected response \"" + response + "\" to message " + errStr + commandStr + message + "} from serial port " + port + "\n";
             return false;
         }
+         */
         return true;
     }
     
@@ -456,7 +458,7 @@ int main(int argc, char *argv[])
         //Todo: 
         //Read config file for desired com ports and/or perform auto detect for connected devices
         // for now hardcode the list of com ports
-	std::vector<std::string> comPorts{"/dev/ttyUSB0"};
+	std::vector<std::string> comPorts{"/dev/ttyUSB1"};
         
 	printf("Initializing Miner %s:%s Threads = %i Timeout = %i\n", IP.c_str(), PORT.c_str(), nThreads, nTimeout);
 	
