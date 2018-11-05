@@ -115,6 +115,7 @@ namespace Core
 				com.disableHashing();
 				sendKey2();
 				sendMessage2();
+				com.setDifficulty(m_unBits);
 				com.enableHashing();
 
 				std::string response;

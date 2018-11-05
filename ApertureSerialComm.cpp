@@ -1,4 +1,6 @@
 #include "ApertureSerialComm.h"
+#include <iostream>
+#include <iomanip>
 
 
 
@@ -60,12 +62,53 @@ bool ApertureSerialComm::sendCommand(Commands command)
 	return true;
 }
 
+bool ApertureSerialComm::writeReg(WriteRegisters writeReg, std::string regValue)
+{
+	std::string regStr, errStr;
+	switch (writeReg) {
+	case BITS:
+		regStr = "{9" + regValue + "}";
+		errStr = "BITS";
+		break;
+
+	default:
+		regStr = "{0}";
+		errStr = "Ping";
+		break;
+	}
+
+	cTimeOutSerialConnection.writeString(regStr);
+	std::string response;
+	try
+	{
+		response = cTimeOutSerialConnection.readStringUntil("}");
+	}
+	catch (timeout_exception& e)
+	{
+		//timeout reading from serial port
+		std::cout << "Timeout waiting for response from serial port " + port + " after writing register " + errStr + " " + regStr + "\n";
+		return false;
+	}
+	catch (std::exception& e)
+	{
+		printf("ERROR: %s\n", e.what());
+		return false;
+	}
+
+	if (response != "{K")
+	{
+		std::cout << "Unexpected response \"" + response + "\" after writing register " + errStr + " " + regStr + " from serial port " + port + "\n";
+		return false;
+	}
+	return true;
+}
+
 std::string ApertureSerialComm::readReg(ReadRegisters readReg)
 {
 	std::string regStr, errStr;
 	switch (readReg) {
 	case GET_DIFF28_HASH_COUNT:
-		regStr = "{37}";
+		regStr = "{7}";
 		errStr = "GET_DIFF28_HASH_COUNT";
 		break;
 	default:
@@ -73,6 +116,7 @@ std::string ApertureSerialComm::readReg(ReadRegisters readReg)
 		errStr = "Error";
 		break;
 	}
+
 
 	cTimeOutSerialConnection.writeString(regStr);
 	std::string response;
@@ -104,6 +148,21 @@ std::string ApertureSerialComm::readReg(ReadRegisters readReg)
 		return "";
 	}
 	return response.substr(1); //strip off the leading '}'
+}
+
+bool ApertureSerialComm::setDifficulty(unsigned int bits)
+//set the target difficulty of the miner
+{
+	//convert bits to a hex string.
+	std::stringstream stream;
+	stream << std::setfill('0') << std::setw(8);  //string must be 8 characters.
+	stream << std::uppercase << std::hex << bits;  //hex string must be uppercase
+	std::string strBits(stream.str());
+
+	bool success = writeReg(BITS, strBits);
+
+	return success;
+
 }
 
 unsigned int ApertureSerialComm::getDiff28HashCount()

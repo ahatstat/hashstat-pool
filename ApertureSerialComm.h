@@ -15,9 +15,12 @@ public:
 
 	enum Commands { PING, ENABLE_HASH, DISABLE_HASH };
 	enum ReadRegisters { GET_DIFF28_HASH_COUNT };
+	enum WriteRegisters { BITS };
 	enum MessageTypes { KEY2, MESSAGE2 };
 	bool sendCommand(Commands command);
 	std::string readReg(ReadRegisters readReg);
+	bool writeReg(WriteRegisters writeReg, std::string regValue);
+	bool ApertureSerialComm::setDifficulty(unsigned int diff);
 	unsigned int ApertureSerialComm::getDiff28HashCount();
 	bool sendMessage(MessageTypes messageType, std::string message);
 	bool ping();

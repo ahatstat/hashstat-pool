@@ -358,7 +358,7 @@ namespace Core
 						if ((pWork))
 						{
 							nBestHeight = pWork->m_pBLOCK->GetHeight();
-							//Check for same block height
+							//Check for same block height.  This happens occaisionally.  Not sure why.  
 							if (nBestHeight == nHeight)
 							{
 								//std::cout << "New Block but height didn't change." << std::endl;
@@ -368,22 +368,15 @@ namespace Core
 								//Try once to get a new block
 								pWork = CLIENT->RequestWork(nTimeout);
 
-								if (pWork)
-								{
-									pBlock = pWork->m_pBLOCK;
-								}
-
 							}
 
-
 							pBlock = pWork->m_pBLOCK;
-							THREADS[nIndex]->SetIsBlockFound(false);
-							THREADS[nIndex]->SetIsNewBlock(false);
 							THREADS[nIndex]->SetBits(pWork->m_unBits);
 							THREADS[nIndex]->SetBlock(pBlock);
-
 							nDifficulty = THREADS[nIndex]->GetBlock()->GetBits();
 							nBestHeight = pWork->m_pBLOCK->GetHeight();
+							THREADS[nIndex]->SetIsBlockFound(false);
+							THREADS[nIndex]->SetIsNewBlock(false);
 
 							time_t currentTime;
 							time(&currentTime);
@@ -392,9 +385,8 @@ namespace Core
 							
 							if (nHeight != nBestHeight)
 							{
-								std::cout << "\r                 ";  //delete dots
+								std::cout << "\r                                 ";  //delete dots
 #ifdef WIN32
-
 								SetConsoleTextAttribute(hConsole, 8);
 								printf("\n[MASTER] Nexus Block %u | Share Diff %.6f | %s\n", nBestHeight, Core::GetDifficulty(THREADS[nIndex]->GetBits()), ctime(&currentTime));
 								SetConsoleTextAttribute(hConsole, 7);

@@ -4,4 +4,8 @@
     <LocalDebuggerCommandArguments>us.nexuspool.ru 8333 2RcY8acdk258Hb5a63kq4ME7P1vtGDhyGQGXx8afc2QPwjzbv1h</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>us.nexuspool.ru 8333 2RcY8acdk258Hb5a63kq4ME7P1vtGDhyGQGXx8afc2QPwjzbv1h</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

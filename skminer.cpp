@@ -1,4 +1,7 @@
 //Nexus Pool Miner for Aperture Hardware
+//Andrew Hatstat
+//Aperture Mining, LLC
+//Created November 2018.  Modified from Nexus Hash GPU Pool Miner.
 
 #include <iostream>
 #include "boost/lexical_cast.hpp"
