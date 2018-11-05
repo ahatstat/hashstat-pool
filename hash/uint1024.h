@@ -12,8 +12,8 @@
 //#include <limits.h>
 //#include <stdio.h>
 //#include <string.h>
-//#include <string>
-//#include <vector>
+#include <string>
+#include <vector>
 
 typedef long long  int64;
 typedef unsigned long long  uint64;
@@ -29,7 +29,6 @@ protected:
     enum { WIDTH=BITS/32 };
     unsigned int pn[WIDTH];
 public:
-
     bool operator!() const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -281,8 +280,6 @@ public:
     {
         return (!(a == b));
     }
-
-
 
     std::string GetHex() const
     {

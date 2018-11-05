@@ -29,6 +29,9 @@ class TimeoutSerial: private boost::noncopyable
 {
 public:
     TimeoutSerial();
+	//noncopyable but moveable
+	TimeoutSerial(TimeoutSerial&&) = default;
+	TimeoutSerial& operator=(TimeoutSerial&&) = default;
 
     /**
      * Opens a serial device. By default timeout is disabled.
