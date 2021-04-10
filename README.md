@@ -2,6 +2,8 @@ Nexus Hash Channel Miner.  Adapted from Videlicet's prime solo miner.
 Connects to a pool for mining Nexus Hash channel.  The program communicates over a serial port to a compatible FPGA board running nexus hashing algorithm. 
 
 To Run on Windows:
+Edit config.ini to set the com port connected to the FPGA board.  
+
 skminer.exe pooladdress port payoutAddress
 
 for example:
