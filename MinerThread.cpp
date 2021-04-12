@@ -70,6 +70,7 @@ namespace Core
 #endif
 		//create serial port object.  This opens the serial port
 		ApertureSerialComm com(m_sComPort, m_nBaudRate);
+		com.disableHashing();
 
 		//lambda convenience functions
 		//send Key2 via com port

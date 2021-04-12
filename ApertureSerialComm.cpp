@@ -170,10 +170,13 @@ unsigned int ApertureSerialComm::getDiff28HashCount()
 	std::string s = readReg(GET_DIFF28_HASH_COUNT);
 	if (s == "")
 		return 0;
-
+	//get only the last 8 characters
+	std::string s_trunc = s;
+	if (s.length() >= 8)
+		s_trunc = s.substr(s.length() - 8);
 	unsigned int x;
 	std::stringstream ss;
-	ss << std::hex << s;
+	ss << std::hex << s_trunc;
 	ss >> x;
 	return x;
 }

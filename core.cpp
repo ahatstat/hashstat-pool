@@ -262,6 +262,10 @@ namespace Core
 					unsigned long long nHashes = Hashes();
 					//double nMHashps = ((double)nHashes / 1000.0) / (double)TIMER.ElapsedMilliseconds();
 					double MegaHashesPerSecond = nHashes *  pow(2,28) / 1000000.0 / elapsedFromStart;
+					//printf("elapsedFromStart %i\n", elapsedFromStart);
+					//printf("Elapsed %f\n", Elapsed);
+					//printf("nHashes %llu\n", nHashes);
+					//printf("MegaHashesPerSecond %f\n", MegaHashesPerSecond);
 
 					if ((elapsedFromStart > 5) && (nReceivedBlockCount < 1))
 					{
@@ -453,11 +457,11 @@ namespace Core
 #ifdef WIN32
 							SetConsoleTextAttribute(hConsole, 2);
 							printf("\n\n******* TEST BLOCK with %.3f Leading Zero Bits FOUND *******\n\n", dDiff);
-							printf("\n[MASTER] TEST Block number %u Found by \"%s\" GPU[%u]\n", nBlocksFoundCounterTest, device_name[THREADS[nIndex]->GetThreadID()], nIndex);
+							printf("\n[MASTER] TEST Block number %u Found by FGPA[%u]\n", nBlocksFoundCounterTest, nIndex);
 							SetConsoleTextAttribute(hConsole, 7);
 #else
 							printf("\n\n******* TEST BLOCK with %.3f Leading Zero Bits FOUND *******\n\n", dDiff);
-							printf("\n[MASTER] TEST Block number %u Found by \"%s\" GPU[%u]\n", nBlocksFoundCounterTest, device_name[THREADS[nIndex]->GetGpuId()], nIndex);
+							printf("\n[MASTER] TEST Block number %u Found by FPGA[%u]\n", nBlocksFoundCounterTest, nIndex);
 #endif
 
 							THREADS[nIndex]->SetIsNewBlock(true);
@@ -489,10 +493,10 @@ namespace Core
 							std::cout << "\r                                 ";  //delete dots
 #ifdef WIN32
 							SetConsoleTextAttribute(hConsole, 2);
-							printf("\tShare (Log2 %.3f) Found by \"%s\" GPU[%u] (Accepted)\n", dDiff, device_name[THREADS[nIndex]->GetThreadID()], nIndex);
+							printf("\tShare (Log2 %.3f) Found by FPGA[%u] (Accepted)\n", dDiff, nIndex);
 							SetConsoleTextAttribute(hConsole, 7);
 #else
-							printf("\tShare (Log2 %.3f) Found by \"%s\" GPU[%u] (Accepted)\n", dDiff, device_name[THREADS[nIndex]->GetGpuId()], nIndex);
+							printf("\tShare (Log2 %.3f) Found by FPGA[%u] (Accepted)\n", dDiff, nIndex);
 #endif
 							
 							nBlocksAccepted++;
@@ -506,10 +510,10 @@ namespace Core
 							std::cout << "\r                                 ";  //delete dots
 #ifdef WIN32
 							SetConsoleTextAttribute(hConsole, 4);
-							printf("\tShare (Log2 %.3f) Found by \"%s\" GPU[%u] (Rejected)\n", dDiff, device_name[THREADS[nIndex]->GetThreadID()], nIndex);
+							printf("\tShare (Log2 %.3f) Found by FPGA[%u] (Rejected)\n", dDiff, nIndex);
 							SetConsoleTextAttribute(hConsole, 7);
 #else
-							printf("\tShare (Log2 %.3f) Found by \"%s\" GPU[%u] (Rejected)\n", dDiff, device_name[THREADS[nIndex]->GetGpuId()], nIndex);
+							printf("\tShare (Log2 %.3f) Found by FPGA[%u] (Rejected)\n", dDiff, nIndex);
 #endif
 							THREADS[nIndex]->SetIsNewBlock(true);
 							THREADS[nIndex]->SetIsBlockFound(false);

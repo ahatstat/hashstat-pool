@@ -20,8 +20,8 @@ public:
 	bool sendCommand(Commands command);
 	std::string readReg(ReadRegisters readReg);
 	bool writeReg(WriteRegisters writeReg, std::string regValue);
-	bool ApertureSerialComm::setDifficulty(unsigned int diff);
-	unsigned int ApertureSerialComm::getDiff28HashCount();
+	bool setDifficulty(unsigned int diff);
+	unsigned int getDiff28HashCount();
 	bool sendMessage(MessageTypes messageType, std::string message);
 	bool ping();
 	bool enableHashing();
